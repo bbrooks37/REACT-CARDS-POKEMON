@@ -1,0 +1,114 @@
+/* src/PlayingCardList.css */
+
+.PlayingCardList {
+  flex: 1;
+  flex-direction: column;
+  background: forestgreen;
+  border-radius: 10px;
+  margin: 10px;
+  color: white;
+  display: flex; /* Added for flex-direction to work */
+  align-items: center; /* Center content horizontally */
+  padding: 20px; /* Add some padding */
+}
+
+.PlayingCardList-card-area {
+  flex: 1;
+  display: grid; /* Use grid for card layout */
+  grid-template-columns: repeat(4, 1fr); /* Force 4 columns for 12 cards (3 rows) */
+  gap: 15px; /* Space between cards */
+  justify-items: center; /* Center cards within their grid cells */
+  align-items: center; /* Center cards vertically within their grid cells */
+  width: 100%; /* Ensure it takes full width */
+  max-width: 800px; /* Limit max width for better readability on large screens */
+  padding: 20px 0; /* Vertical padding */
+}
+
+/* --- New styles for the Memory Game --- */
+
+.game-info {
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: bold;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.game-info p {
+  margin: 0;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+.game-info button {
+  background-color: #ffcc00; /* A nice yellow for buttons */
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.game-info button:hover {
+  background-color: #e6b800;
+  transform: translateY(-2px);
+}
+
+.game-info button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.win-message {
+  color: #00ff00; /* Bright green for win message */
+  font-size: 1.8em;
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Style for matched cards (can complement or override inline style) */
+.PlayingCard.matched {
+  border: 2px solid #00ff00; /* Green border for matched cards */
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  /* The opacity and pointer-events: none are handled via inline style in JS for immediate effect */
+}
+
+/* Adjust card size within the grid */
+.PlayingCard {
+  width: 100%; /* Make cards fill their grid cell */
+  max-width: 120px; /* Max width for individual cards */
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 8px; /* Rounded corners for cards */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease-in-out;
+}
+
+.PlayingCard:not(.matched):hover {
+  transform: scale(1.03); /* Slight hover effect */
+}
+
+/* --- Added animation for flipped state --- */
+.PlayingCard.flipped {
+  transform: scale(1.05); /* Slightly enlarge when flipped */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); /* Add a stronger shadow */
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out; /* Smooth transition */
+}

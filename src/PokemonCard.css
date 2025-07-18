@@ -1,0 +1,105 @@
+/* src/PokemonCard.css */
+
+.PokemonCard {
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease-in-out, filter 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  color: #333; /* Dark text for light background */
+  width: 150px; /* Fixed width for consistency */
+  min-height: 220px; /* Ensure consistent height */
+  justify-content: space-between;
+  position: relative; /* Needed for absolute positioning of remove button */
+}
+
+.PokemonCard-image {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin-bottom: 10px;
+}
+
+.PokemonCard-image img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.PokemonCard-image img:last-child { /* Back image */
+  opacity: 0; /* Initially hidden */
+}
+
+.PokemonCard-image:hover img:first-child { /* Front image on hover */
+  opacity: 0;
+}
+
+.PokemonCard-image:hover img:last-child { /* Back image on hover */
+  opacity: 1;
+}
+
+.PokemonCard-name {
+  font-size: 1.2em;
+  font-weight: bold;
+  text-transform: capitalize;
+  margin-bottom: 10px;
+  color: #3a506b; /* Accent color */
+}
+
+.PokemonCard-stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  font-size: 0.85em;
+}
+
+.PokemonCard-stats li {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.PokemonCard-stats li:last-child {
+  border-bottom: none;
+}
+
+/* Style for fainted Pokemon */
+.PokemonCard.fainted {
+  filter: grayscale(100%) brightness(0.7); /* Make it look fainted */
+  opacity: 0.7;
+  pointer-events: none; /* Make it unclickable */
+}
+
+/* New styles for remove button */
+.remove-pokemon-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: #e74c3c; /* Red */
+  color: white;
+  border: none;
+  border-radius: 50%; /* Circular button */
+  width: 25px;
+  height: 25px;
+  font-size: 0.8em;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  z-index: 10; /* Ensure it's above the card image */
+}
+
+.remove-pokemon-btn:hover {
+  background-color: #c0392b;
+}

@@ -1,0 +1,114 @@
+/* src/PokeDex.css */
+
+.PokeDex {
+  flex: 1;
+  flex-direction: column;
+  background: #3a506b; /* Darker blue-gray background for Pokemon section */
+  border-radius: 10px;
+  margin: 10px;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.PokeDex-selection-phase,
+.PokeDex-battle-phase {
+  width: 100%;
+  max-width: 900px; /* Max width for content */
+  text-align: center;
+}
+
+.PokeDex-selection-phase h3 {
+  margin-bottom: 20px;
+  font-size: 1.5em;
+}
+
+.team-display {
+  display: flex;
+  flex-direction: column; /* Changed to column for better stacking on smaller screens */
+  gap: 20px;
+  margin-top: 30px;
+  width: 100%; /* Take full width */
+}
+
+.player-team-section { /* New class for individual player team sections */
+  flex: 1; /* Allow sections to grow */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.team-display h4 {
+  font-size: 1.3em;
+  margin-bottom: 10px;
+  color: #a0c4ff; /* Lighter blue for team headings */
+}
+
+.team-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  min-height: 150px; /* Ensure some space even if no cards yet */
+  padding: 10px;
+  width: 100%; /* Take full width of its parent section */
+}
+
+/* Styles for buttons within PokeDex */
+.done-selecting-btn,
+.reset-game-btn {
+  background-color: #ffd166; /* Yellowish button */
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  margin-left: 10px; /* Space between buttons */
+  margin-right: 10px;
+}
+
+.done-selecting-btn:hover,
+.reset-game-btn:hover {
+  background-color: #ffc34d;
+  transform: translateY(-2px);
+}
+
+.done-selecting-btn:active,
+.reset-game-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Placeholder styles for battle phase */
+.PokeDex-battle-phase {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.PokeDex-battle-phase h2 {
+  font-size: 2em;
+  margin-bottom: 15px;
+  color: #66ccff;
+}
+
+/* Responsive adjustments for team display */
+@media (min-width: 768px) {
+  .team-display {
+    flex-direction: row; /* Side-by-side on larger screens */
+  }
+}

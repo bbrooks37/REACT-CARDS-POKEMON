@@ -1,0 +1,64 @@
+/* src/PokemonSelect.css */
+
+.PokemonSelect {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.PokemonSelect select {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #a0c4ff;
+  background-color: #3a506b;
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+  appearance: none; /* Remove default dropdown arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13%205.1L146.2%20202.7%2018.3%2074.5a17.6%2017.6%200%200%200-25.3%200%2017.6%2017.6%200%200%0A0%200%2025.3l130.8%20129.8c6.8%206.7%2017.7%206.7%2024.5%200l130.8-129.8a17.6%2017.6%200%200%200%200-25.3c-6.7-6.7-17.7-6.7-24.4%200z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: right 10px top 50%;
+  background-size: 12px auto;
+}
+
+.PokemonSelect select:focus {
+  outline: none;
+  border-color: #ffd166;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.5);
+}
+
+.PokemonSelect option {
+  background-color: #3a506b;
+  color: white;
+}
+
+.pokemon-select-btn {
+  background-color: #66ccff; /* Blue button */
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.pokemon-select-btn:hover {
+  background-color: #4dc2ff;
+  transform: translateY(-2px);
+}
+
+.pokemon-select-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
