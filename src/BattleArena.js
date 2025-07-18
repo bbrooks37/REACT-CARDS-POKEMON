@@ -1,7 +1,7 @@
 // src/BattleArena.js
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import PokemonCard from "./PokemonCard"; // To display active Pokemon
-import { getEffectiveStat } from "./helpers"; // Import the new helper for effective stats
+import { getEffectiveStat, getTypeEffectiveness } from "./helpers"; // Import new helpers
 import "./BattleArena.css"; // New CSS file for BattleArena styling
 
 /* BattleArena component: Manages the battle logic and UI between two Pokemon teams. */
@@ -103,7 +103,7 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
     setWinner(null);
     setIsSwitching(false);
     setPlayerToSwitch(null);
-    setSelectedMove(null);
+    setSelectedMove(null); // Ensure no move is pre-selected on new game
     setAttackingPlayer(null); // Reset attacking player animation
   }, [player1Team, player2Team]); // Dependencies for useCallback
 
@@ -148,11 +148,11 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
   }, [player1BattleTeam, player2BattleTeam]); // Dependencies for useCallback
 
   /**
-   * Calculates damage based on move type and effective stats.
+   * Calculates damage based on move type, effective stats, and type effectiveness.
    * @param {object} attacker - The attacking Pokemon.
    * @param {object} defender - The defending Pokemon.
    * @param {object} move - The move being used.
-   * @returns {number} The calculated damage.
+   * @returns {object} { damage: number, isCritical: boolean, typeEffectiveness: number }
    */
   const calculateDamage = useCallback((attacker, defender, move) => {
     let damageStatAttacker, defenseStatDefender;
@@ -165,11 +165,15 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
       damageStatAttacker = getEffectiveStat(getBaseStat(attacker, 'special-attack'), attacker.statStages['special-attack']);
       defenseStatDefender = getEffectiveStat(getBaseStat(defender, 'special-defense'), defender.statStages['special-defense']);
     } else {
-      return 0; // Status moves deal no direct damage
+      return { damage: 0, isCritical: false, typeEffectiveness: 1 }; // Status moves deal no direct damage
     }
 
-    // Simplified damage formula (can be expanded for STAB, type effectiveness, etc.)
+    // Get type effectiveness multiplier
+    const typeEffectiveness = getTypeEffectiveness(move.type, defender.type);
+
+    // Simplified damage formula
     let baseDamage = Math.max(1, (move.power * damageStatAttacker) / (defenseStatDefender * 2));
+    baseDamage = baseDamage * typeEffectiveness; // Apply type effectiveness
 
     const isCritical = Math.random() < 0.1; // 10% critical hit chance
     if (isCritical) {
@@ -179,8 +183,8 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
     const randomFactor = Math.floor(Math.random() * 5) - 2; // -2 to +2 random damage
     const finalDamage = Math.max(1, Math.floor(baseDamage + randomFactor)); // Ensure at least 1 damage
 
-    return { damage: finalDamage, isCritical };
-  }, []);
+    return { damage: finalDamage, isCritical, typeEffectiveness };
+  }, [getBaseStat]); // getBaseStat is a dependency
 
   /**
    * Applies a stat change to a Pokemon.
@@ -198,7 +202,7 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
   /**
    * Applies a status effect to a Pokemon.
    * @param {object} pokemon - The Pokemon to apply status to.
-   * @param {string} type - Type of status ('poisoned', 'paralyzed', 'slept', 'confused', 'burned').
+   * @param {string} type - Type of status ('poisoned', 'paralyzed', 'burned', 'slept', 'confused', 'frozen').
    * @param {number} turns - Duration of the status effect.
    * @returns {object} The updated Pokemon object.
    */
@@ -208,7 +212,10 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
       return pokemon; // Already has this status
     }
     // More complex: check for specific immunities or overlapping statuses
-    if (type === 'sleep' && pokemon.status === 'paralyzed') return pokemon; // Can't be asleep and paralyzed (simplified)
+    if (type === 'slept' && (pokemon.status === 'paralyzed' || pokemon.status === 'frozen')) return pokemon;
+    if (type === 'paralyzed' && (pokemon.status === 'slept' || pokemon.status === 'frozen')) return pokemon;
+    if (type === 'frozen' && (pokemon.status === 'slept' || pokemon.status === 'paralyzed')) return pokemon;
+
 
     return { ...pokemon, status: type, statusTurns: turns };
   }, []);
@@ -218,7 +225,8 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
    * This useEffect runs when 'turn' changes.
    */
   useEffect(() => {
-    if (battleOver || isSwitching) return;
+    // Only run if not battleOver or switching, and active Pokemon are set
+    if (battleOver || isSwitching || !activePokemonP1 || !activePokemonP2) return;
 
     let currentActivePokemon, playerNum;
     if (turn === 1) {
@@ -229,11 +237,9 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
       playerNum = 2;
     }
 
-    // Crucial: Clear selected move at the start of each new turn
-    setSelectedMove(null);
-
-    // If active Pokemon is fainted, immediately prompt for switch if possible
-    if (!currentActivePokemon || currentActivePokemon.isFainted) {
+    // Check if the current active Pokemon is already fainted.
+    // This handles cases where a Pokemon faints from poison/burn at the end of the opponent's turn.
+    if (currentActivePokemon.isFainted) {
       const remainingAliveTeam = (playerNum === 1 ? player1BattleTeam : player2BattleTeam).filter(p => !p.isFainted);
       if (remainingAliveTeam.length > 0) {
         setBattleLog(prevLog => [...prevLog, `Player ${playerNum}, your active Pokemon fainted! Choose your next Pokemon!`]);
@@ -251,7 +257,7 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
       return; // Stop further turn processing for fainted Pokemon
     }
 
-    // Process status effects at turn start
+    // Process status effects
     let updatedPokemon = { ...currentActivePokemon };
     let turnSkipped = false;
 
@@ -279,6 +285,18 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
         handleFaint(updatedPokemon, playerNum);
         return;
       }
+    }
+
+    // Handle frozen status (full turn skip until thawed)
+    if (updatedPokemon.status === 'frozen') {
+        setBattleLog(prevLog => [...prevLog, `${updatedPokemon.name} is frozen solid!`]);
+        if (Math.random() < 0.2) { // 20% chance to thaw
+            setBattleLog(prevLog => [...prevLog, `${updatedPokemon.name} thawed out!`]);
+            updatedPokemon.status = null;
+            updatedPokemon.statusTurns = 0;
+        } else {
+            turnSkipped = true;
+        }
     }
 
     if (updatedPokemon.status === 'paralyzed' && Math.random() < 0.25) { // 25% chance to be fully paralyzed
@@ -328,22 +346,95 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
     if (turnSkipped) {
       setTurn(prevTurn => (prevTurn === 1 ? 2 : 1));
     }
-  }, [turn, battleOver, isSwitching, activePokemonP1, activePokemonP2, player1BattleTeam, player2BattleTeam, updatePokemonInTeam, handleFaint]); // Added updatePokemonInTeam and handleFaint to dependencies
+  }, [turn, battleOver, isSwitching, activePokemonP1, activePokemonP2, player1BattleTeam, player2BattleTeam, updatePokemonInTeam, handleFaint, getBaseStat]); // Added getBaseStat to dependencies
+
+
+  /**
+   * Handles the AI's turn.
+   * This function will decide whether to attack or switch, and which move/Pokemon to choose.
+   */
+  const handleAIAction = useCallback(() => {
+    if (battleOver || isSwitching || turn !== 2) return; // Only for Player 2's turn and if not battling/switching
+
+    const aiPokemon = activePokemonP2;
+    const opponentPokemon = activePokemonP1;
+    const aiTeam = player2BattleTeam;
+
+    if (!aiPokemon || aiPokemon.isFainted) {
+        // If AI's active Pokemon fainted, it must switch
+        const aliveBenched = aiTeam.filter(p => !p.isFainted && p.id !== aiPokemon?.id);
+        if (aliveBenched.length > 0) {
+            const pokemonToSwitchTo = aliveBenched[0]; // Simple AI: pick first available
+            setTimeout(() => {
+                handleSwitchPokemon(pokemonToSwitchTo.id);
+            }, 1500); // Simulate thinking time
+            return;
+        } else {
+            // No alive Pokemon left, battle should be over (handled by handleFaint)
+            return;
+        }
+    }
+
+    // Simple AI strategy: If current HP is low (e.g., < 30% of original HP) and has healthy benched Pokemon, switch.
+    const lowHpThreshold = aiPokemon.originalHp * 0.3;
+    const aliveBenchedPokemon = aiTeam.filter(p => !p.isFainted && p.id !== aiPokemon.id);
+
+    if (aiPokemon.currentHp < lowHpThreshold && aliveBenchedPokemon.length > 0) {
+        const pokemonToSwitchTo = aliveBenchedPokemon[0]; // Simple AI: switch to first available
+        setBattleLog(prevLog => [...prevLog, `Player 2 is considering a switch...`]);
+        setTimeout(() => {
+            handleSwitchPokemon(pokemonToSwitchTo.id);
+        }, 2000); // Simulate thinking time for switch
+        return;
+    }
+
+    // Otherwise, attack. Simple AI: pick a random available move that has PP.
+    const availableMoves = aiPokemon.moves.filter(move => move.currentPp > 0);
+    if (availableMoves.length > 0) {
+        const moveChoice = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+        setBattleLog(prevLog => [...prevLog, `Player 2 chose ${moveChoice.name}!`]);
+        setSelectedMove(moveChoice); // Set the selected move for the AI
+        setTimeout(() => {
+            handleAttack(); // Execute the attack
+        }, 1500); // Simulate thinking time
+    } else {
+        setBattleLog(prevLog => [...prevLog, `${aiPokemon.name} has no moves left! Player 2 must switch.`]);
+        // Force switch if no moves left
+        if (aliveBenchedPokemon.length > 0) {
+            const pokemonToSwitchTo = aliveBenchedPokemon[0];
+            setTimeout(() => {
+                handleSwitchPokemon(pokemonToSwitchTo.id);
+            }, 1500);
+        } else {
+            // No moves, no switches, battle over (should be caught by handleFaint)
+        }
+    }
+  }, [battleOver, isSwitching, turn, activePokemonP1, activePokemonP2, player2BattleTeam, handleSwitchPokemon, handleAttack]); // Dependencies for useCallback
+
+  // Effect to trigger AI action when it's Player 2's turn
+  useEffect(() => {
+    if (turn === 2 && !battleOver && !isSwitching) {
+      handleAIAction();
+    }
+  }, [turn, battleOver, isSwitching, handleAIAction]);
+
 
   /** Function to handle an attack. */
   const handleAttack = () => {
     if (battleOver || isSwitching || !selectedMove) return; // Prevent attacks if battle is over, switching, or no move selected
 
     let attacker, defender;
-    let defenderTeamId;
+    let attackerPlayerNum, defenderTeamId;
 
     if (turn === 1) {
       attacker = activePokemonP1;
       defender = activePokemonP2;
+      attackerPlayerNum = 1;
       defenderTeamId = 2;
     } else {
       attacker = activePokemonP2;
       defender = activePokemonP1;
+      attackerPlayerNum = 2;
       defenderTeamId = 1;
     }
 
@@ -365,10 +456,10 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
       m.name === selectedMove.name ? { ...m, currentPp: Math.max(0, m.currentPp - 1) } : m
     );
     const updatedAttacker = { ...attacker, moves: updatedAttackerMoves };
-    updatePokemonInTeam(updatedAttacker, turn); // Update attacker's state in their team
+    updatePokemonInTeam(updatedAttacker, attackerPlayerNum); // Update attacker's state in their team
 
     // Trigger attack animation
-    setAttackingPlayer(turn);
+    setAttackingPlayer(attackerPlayerNum);
     setTimeout(() => setAttackingPlayer(null), 500); // Reset animation after 0.5s
 
     // Check move accuracy (simplified)
@@ -382,29 +473,41 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
     // Handle different move categories
     if (selectedMove.type === 'status') {
         setBattleLog(prevLog => [...prevLog, `${attacker.name} used ${selectedMove.name}!`]);
+        // Healing moves
+        if (selectedMove.healing > 0) {
+            const healingAmount = Math.floor(attacker.originalHp * selectedMove.healing);
+            const newHp = Math.min(attacker.originalHp, attacker.currentHp + healingAmount);
+            const healedAttacker = { ...updatedAttacker, currentHp: newHp };
+            updatePokemonInTeam(healedAttacker, attackerPlayerNum);
+            setBattleLog(prevLog => [...prevLog, `${attacker.name} recovered ${healingAmount} HP!`]);
+        }
+        // Stat change moves
         if (selectedMove.statChange) {
-            let targetPokemon = selectedMove.statChange.target === 'self' ? attacker : defender;
-            let targetPlayerNum = selectedMove.statChange.target === 'self' ? turn : defenderTeamId;
+            let targetPokemon = selectedMove.statChange.target === 'self' ? updatedAttacker : defender;
+            let targetPlayerNum = selectedMove.statChange.target === 'self' ? attackerPlayerNum : defenderTeamId;
             const newTargetPokemon = applyStatChange(targetPokemon, selectedMove.statChange.stat, selectedMove.statChange.stages);
             updatePokemonInTeam(newTargetPokemon, targetPlayerNum);
             setBattleLog(prevLog => [...prevLog, `${newTargetPokemon.name}'s ${selectedMove.statChange.stat} ${selectedMove.statChange.stages > 0 ? 'rose' : 'fell'}!`]);
         }
+        // Status effect moves
         if (selectedMove.statusEffect) {
             if (Math.random() < (selectedMove.statusEffect.chance || 1)) {
-                let targetPokemon = selectedMove.statusEffect.target === 'self' ? attacker : defender;
-                let targetPlayerNum = selectedMove.statusEffect.target === 'self' ? turn : defenderTeamId;
+                let targetPokemon = selectedMove.statusEffect.target === 'self' ? updatedAttacker : defender;
+                let targetPlayerNum = selectedMove.statusEffect.target === 'self' ? attackerPlayerNum : defenderTeamId;
                 const newTargetPokemon = applyStatusEffect(targetPokemon, selectedMove.statusEffect.type, selectedMove.statusEffect.turns);
-                updatePokemonInTeam(newTargetPokemon, targetPlayerNum);
-                setBattleLog(prevLog => [...prevLog, `${targetPokemon.name} became ${selectedMove.statusEffect.type}!`]);
+                if (newTargetPokemon !== targetPokemon) { // Only log if status was actually applied
+                    updatePokemonInTeam(newTargetPokemon, targetPlayerNum);
+                    setBattleLog(prevLog => [...prevLog, `${targetPokemon.name} became ${selectedMove.statusEffect.type}!`]);
+                }
             }
         }
         setSelectedMove(null);
         setTurn(prevTurn => (prevTurn === 1 ? 2 : 1));
-        return; // Status move, no damage calculation
+        return; // Status move, no direct damage calculation
     }
 
     // Damage calculation for physical/special moves
-    const { damage: damageDealt, isCritical } = calculateDamage(attacker, defender, selectedMove);
+    const { damage: damageDealt, isCritical, typeEffectiveness } = calculateDamage(attacker, defender, selectedMove);
     const newDefenderHP = Math.max(0, defender.currentHp - damageDealt);
 
     const updatedDefender = { ...defender, currentHp: newDefenderHP, isFainted: newDefenderHP <= 0 };
@@ -414,7 +517,28 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
     if (isCritical) {
       attackMessage += " It was a critical hit!";
     }
+    if (typeEffectiveness > 1) {
+        attackMessage += " It's super effective!";
+    } else if (typeEffectiveness < 1 && typeEffectiveness > 0) {
+        attackMessage += " It's not very effective...";
+    } else if (typeEffectiveness === 0) {
+        attackMessage += " It had no effect!";
+    }
     setBattleLog(prevLog => [...prevLog, attackMessage]);
+
+    // Apply recoil damage to attacker if applicable
+    if (selectedMove.recoil > 0) {
+        const recoilDamage = Math.max(1, Math.floor(damageDealt * selectedMove.recoil));
+        const newAttackerHp = Math.max(0, updatedAttacker.currentHp - recoilDamage);
+        const recoilAttacker = { ...updatedAttacker, currentHp: newAttackerHp, isFainted: newAttackerHp <= 0 };
+        updatePokemonInTeam(recoilAttacker, attackerPlayerNum);
+        setBattleLog(prevLog => [...prevLog, `${attacker.name} took ${recoilDamage} recoil damage!`]);
+        if (newAttackerHp <= 0) {
+            handleFaint(recoilAttacker, attackerPlayerNum);
+            setSelectedMove(null); // Clear selected move after action
+            return; // Attacker fainted, end turn
+        }
+    }
 
     // Apply status effect from move if any (after damage)
     if (selectedMove.statusEffect && selectedMove.statusEffect.type !== 'attack-down' && selectedMove.statusEffect.type !== 'defense-down') {
@@ -445,6 +569,7 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
     let newActivePokemon;
     let teamToSwitchFrom;
     let setActivePokemonFunction;
+    let playerNumWhoSwitched = playerToSwitch; // Store this before clearing playerToSwitch
 
     if (playerToSwitch === 1) {
       teamToSwitchFrom = player1BattleTeam;
@@ -458,7 +583,7 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
 
     if (newActivePokemon && newActivePokemon.id !== (playerToSwitch === 1 ? activePokemonP1?.id : activePokemonP2?.id)) {
       setActivePokemonFunction(newActivePokemon); // Set the new active Pokemon
-      setBattleLog(prevLog => [...prevLog, `Player ${playerToSwitch} switched to ${newActivePokemon.name}!`]);
+      setBattleLog(prevLog => [...prevLog, `Player ${playerNumWhoSwitched} switched to ${newActivePokemon.name}!`]);
     }
 
     setIsSwitching(false); // Exit switching mode
@@ -481,8 +606,7 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
   // Determine current player's active Pokemon and team for rendering actions
   const currentPlayerActivePokemon = turn === 1 ? activePokemonP1 : activePokemonP2;
   const currentPlayerBattleTeam = turn === 1 ? player1BattleTeam : player2BattleTeam;
-  const otherPlayerBattleTeam = turn === 1 ? player2BattleTeam : player1BattleTeam;
-
+  // const otherPlayerBattleTeam = turn === 1 ? player2BattleTeam : player1BattleTeam; // Not directly used in render
 
   return (
     <div className="BattleArena">
@@ -506,8 +630,8 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
           <p className="turn-indicator">Turn: Player {turn}</p>
           {battleOver && <h3 className="battle-winner">{winner} Wins!</h3>}
 
-          {/* Action Buttons (Move Selection, Execute, Switch) */}
-          {!battleOver && !isSwitching && currentPlayerActivePokemon && !currentPlayerActivePokemon.isFainted && (
+          {/* Action Buttons (Move Selection, Execute, Switch) - Only for Player 1 */}
+          {!battleOver && !isSwitching && currentPlayerActivePokemon && !currentPlayerActivePokemon.isFainted && turn === 1 && (
             <div className="action-buttons">
               {/* Render move buttons for the current player's active Pokemon */}
               {currentPlayerActivePokemon.moves.map(move => (
@@ -528,6 +652,13 @@ function BattleArena({ player1Team, player2Team, onResetGame }) {
               )}
             </div>
           )}
+          {/* Message for Player 2's turn */}
+          {!battleOver && !isSwitching && currentPlayerActivePokemon && !currentPlayerActivePokemon.isFainted && turn === 2 && (
+            <div className="ai-turn-message">
+              <p>Player 2 is deciding...</p>
+            </div>
+          )}
+
 
           {/* Switching UI */}
           {!battleOver && isSwitching && playerToSwitch && (
