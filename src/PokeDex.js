@@ -8,8 +8,6 @@ import { formatPokemon } from "./helpers";
 import "./PokeDex.css";
 
 function PokeDex() {
-  // useAxios is now primarily for fetching the initial Pokemon details
-  // Its 'pokemonData' state will hold the *latest fetched* Pokemon, not the cumulative team.
   const [fetchedPokemon, fetchPokemon, clearFetchedPokemon] = useAxios(
     "pokemonCards", // localStorageKey
     "https://pokeapi.co/api/v2/pokemon/", // base URL
@@ -75,7 +73,7 @@ function PokeDex() {
         }
       }
     }
-  }, [fetchedPokemon, activePlayer, player1Team, player2Team, selectionPhase, clearFetchedPokemon]); // Added clearFetchedPokemon to dependencies
+  }, [fetchedPokemon, activePlayer, player1Team, player2Team, selectionPhase, clearFetchedPokemon]);
 
   /**
    * Allows a player to remove a Pokemon from their team during selection.
@@ -87,6 +85,35 @@ function PokeDex() {
       setPlayer1Team(prevTeam => prevTeam.filter(p => p.id !== pokemonId));
     } else if (playerNum === 2) {
       setPlayer2Team(prevTeam => prevTeam.filter(p => p.id !== pokemonId));
+    }
+  };
+
+  /**
+   * Allows reordering Pokemon within a team.
+   * @param {string} pokemonId - The ID of the Pokemon to move.
+   * @param {number} direction - -1 for up, 1 for down.
+   * @param {number} playerNum - The player number (1 or 2).
+   */
+  const handleReorderPokemon = (pokemonId, direction, playerNum) => {
+    let team, setTeamFunction;
+    if (playerNum === 1) {
+      team = [...player1Team]; // Create a mutable copy
+      setTeamFunction = setPlayer1Team;
+    } else {
+      team = [...player2Team]; // Create a mutable copy
+      setTeamFunction = setPlayer2Team;
+    }
+
+    const index = team.findIndex(p => p.id === pokemonId);
+    if (index === -1) return; // Pokemon not found
+
+    const newIndex = index + direction;
+
+    // Check bounds
+    if (newIndex >= 0 && newIndex < team.length) {
+      const [movedPokemon] = team.splice(index, 1); // Remove from current position
+      team.splice(newIndex, 0, movedPokemon); // Insert at new position
+      setTeamFunction(team); // Update state with reordered team
     }
   };
 
@@ -127,18 +154,20 @@ function PokeDex() {
       {selectionPhase ? (
         <div className="PokeDex-selection-phase">
           <h3>Player {activePlayer}, select your team ({activePlayer === 1 ? player1Team.length : player2Team.length}/{TEAM_SIZE}):</h3>
-          <PokemonSelect add={handleAddPokemonToTeam} /> {/* Pass the new handler */}
+          <PokemonSelect add={handleAddPokemonToTeam} />
           
           <div className="team-display">
             <div className="player-team-section">
               <h4>Player 1 Team ({player1Team.length}/{TEAM_SIZE}):</h4>
               <div className="team-cards">
-                {player1Team.map(p => (
+                {player1Team.map((p, idx) => (
                   <PokemonCard
                     key={p.id}
                     {...p}
-                    onRemove={() => handleRemovePokemonFromTeam(p.id, 1)} // Pass remove handler
-                    isRemovable={true} // Indicate card is removable
+                    onRemove={() => handleRemovePokemonFromTeam(p.id, 1)}
+                    isRemovable={true}
+                    onMoveUp={idx > 0 ? () => handleReorderPokemon(p.id, -1, 1) : null}
+                    onMoveDown={idx < player1Team.length - 1 ? () => handleReorderPokemon(p.id, 1, 1) : null}
                   />
                 ))}
               </div>
@@ -146,12 +175,14 @@ function PokeDex() {
             <div className="player-team-section">
               <h4>Player 2 Team ({player2Team.length}/{TEAM_SIZE}):</h4>
               <div className="team-cards">
-                {player2Team.map(p => (
+                {player2Team.map((p, idx) => (
                   <PokemonCard
                     key={p.id}
                     {...p}
-                    onRemove={() => handleRemovePokemonFromTeam(p.id, 2)} // Pass remove handler
-                    isRemovable={true} // Indicate card is removable
+                    onRemove={() => handleRemovePokemonFromTeam(p.id, 2)}
+                    isRemovable={true}
+                    onMoveUp={idx > 0 ? () => handleReorderPokemon(p.id, -1, 2) : null}
+                    onMoveDown={idx < player2Team.length - 1 ? () => handleReorderPokemon(p.id, 1, 2) : null}
                   />
                 ))}
               </div>
@@ -167,7 +198,7 @@ function PokeDex() {
         <BattleArena
           player1Team={player1Team}
           player2Team={player2Team}
-          onResetGame={resetGame} // Pass resetGame to BattleArena
+          onResetGame={resetGame}
         />
       )}
     </div>

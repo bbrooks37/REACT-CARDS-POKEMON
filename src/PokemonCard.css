@@ -13,8 +13,49 @@
   width: 150px; /* Fixed width for consistency */
   min-height: 220px; /* Ensure consistent height */
   justify-content: space-between;
-  position: relative; /* Needed for absolute positioning of remove button */
+  position: relative; /* Needed for absolute positioning of remove/reorder buttons */
+  margin: 5px; /* Small margin for mini cards */
 }
+
+/* Styles for mini Pokemon cards in the battle lineup */
+.PokemonCard.mini {
+  width: 80px; /* Smaller width */
+  min-height: 100px; /* Smaller height */
+  padding: 8px;
+  font-size: 0.8em;
+  cursor: default; /* Not clickable in lineup */
+}
+
+.PokemonCard.mini .PokemonCard-image {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 5px;
+}
+
+.PokemonCard.mini .PokemonCard-name {
+  font-size: 0.9em;
+  margin-bottom: 5px;
+}
+
+.PokemonCard.mini .PokemonCard-stats {
+  display: none; /* Hide stats for mini cards */
+}
+
+.PokemonCard.mini .pokemon-hp-display {
+  width: 90%;
+  margin-top: 5px;
+}
+
+.PokemonCard.mini .pokemon-hp-text {
+  font-size: 0.7em;
+  margin-top: 2px;
+}
+
+.PokemonCard.mini .pokemon-status {
+  font-size: 0.6em;
+  padding: 2px 5px;
+}
+
 
 .PokemonCard-image {
   position: relative;
@@ -79,12 +120,19 @@
   pointer-events: none; /* Make it unclickable */
 }
 
-/* New styles for remove button */
-.remove-pokemon-btn {
+/* New styles for remove and reorder buttons */
+.pokemon-card-actions {
   position: absolute;
   top: 5px;
   right: 5px;
-  background-color: #e74c3c; /* Red */
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 10;
+}
+
+.remove-pokemon-btn, .reorder-btn {
+  background-color: #e74c3c; /* Red for remove */
   color: white;
   border: none;
   border-radius: 50%; /* Circular button */
@@ -97,9 +145,86 @@
   justify-content: center;
   align-items: center;
   transition: background-color 0.2s ease;
-  z-index: 10; /* Ensure it's above the card image */
 }
 
-.remove-pokemon-btn:hover {
+.remove-pokemon-btn:hover, .reorder-btn:hover {
   background-color: #c0392b;
+}
+
+.reorder-btn {
+  background-color: #3498db; /* Blue for reorder */
+}
+
+.reorder-btn:hover {
+  background-color: #2980b9;
+}
+
+/* HP Display for battle */
+.pokemon-hp-display {
+  width: 100%;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.pokemon-hp-text {
+  font-size: 0.9em;
+  margin-top: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+/* Status effect display */
+.pokemon-status {
+  font-size: 0.75em;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 5px;
+  margin-top: 5px;
+  color: white;
+}
+
+.pokemon-status.poisoned {
+  background-color: #8e44ad; /* Purple */
+}
+
+.pokemon-status.paralyzed {
+  background-color: #f1c40f; /* Yellow */
+  color: #333;
+}
+
+.pokemon-status.burned {
+  background-color: #e67e22; /* Orange */
+}
+
+.pokemon-status.slept {
+  background-color: #34495e; /* Dark Blue */
+}
+
+.pokemon-status.confused {
+  background-color: #9b59b6; /* Light Purple */
+}
+
+/* Stat stages display */
+.pokemon-stat-stages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 0.75em;
+}
+
+.stat-stage {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  color: white;
+}
+
+.stat-stage.boost {
+  background-color: #27ae60; /* Green for boost */
+}
+
+.stat-stage.drop {
+  background-color: #c0392b; /* Red for drop */
 }

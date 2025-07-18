@@ -39,7 +39,7 @@
   background-color: rgba(0, 0, 0, 0.1);
   flex: 1; /* Allow sides to take equal space */
   min-width: 250px; /* Ensure minimum width for cards */
-  transition: border-color 0.3s ease; /* Smooth transition for active turn */
+  transition: border-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for active turn */
 }
 
 .player-side.active-turn {
@@ -47,29 +47,27 @@
   box-shadow: 0 0 15px rgba(255, 209, 102, 0.5);
 }
 
+/* Attack animation */
+.player-side.attacking {
+  animation: attack-shake 0.3s ease-in-out;
+}
+
+@keyframes attack-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  50% { transform: translateX(10px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+
 .player-side h3 {
   font-size: 1.6em;
   margin-bottom: 15px;
   color: #a0c4ff;
 }
 
-.hp-bar-container {
-  width: 90%;
-  height: 20px;
-  background-color: #555;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 10px;
-  border: 1px solid #444;
-}
-
-.hp-bar {
-  height: 100%;
-  /* Background color is set dynamically via JavaScript */
-  transition: width 0.5s ease-in-out, background-color 0.3s ease-in-out;
-  border-radius: 10px;
-}
-
+/* HP Bar is now handled by PokemonCard.css for consistency */
 .player-side p {
   font-size: 1.1em;
   margin-top: 5px;
@@ -78,6 +76,8 @@
 
 .action-buttons {
   display: flex;
+  flex-wrap: wrap; /* Allow buttons to wrap */
+  justify-content: center;
   gap: 10px;
   margin-top: 20px;
 }
@@ -86,13 +86,14 @@
   background-color: #ffcc00; /* Yellow attack button */
   color: #333;
   border: none;
-  padding: 10px 25px;
+  padding: 10px 15px; /* Slightly smaller padding for multiple buttons */
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1.1em;
+  font-size: 0.95em; /* Slightly smaller font */
   font-weight: bold;
   transition: background-color 0.3s ease, transform 0.1s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 100px; /* Ensure buttons have a minimum width */
 }
 
 .battle-action-btn:hover {
@@ -106,19 +107,38 @@
 }
 
 .battle-action-btn.attack-btn {
-  background-color: #e74c3c; /* Red for attack */
+  background-color: #e74c3c; /* Red for Attack */
   color: white;
+  min-width: 120px; /* Larger for main attack button */
 }
 .battle-action-btn.attack-btn:hover {
   background-color: #c0392b;
 }
 
 .battle-action-btn.switch-btn {
-  background-color: #3498db; /* Blue for switch */
+  background-color: #3498db; /* Blue for Switch */
   color: white;
+  min-width: 120px; /* Larger for main switch button */
 }
 .battle-action-btn.switch-btn:hover {
   background-color: #2980b9;
+}
+
+.battle-action-btn.move-btn {
+  background-color: #2ecc71; /* Green for move buttons */
+  color: white;
+}
+.battle-action-btn.move-btn:hover {
+  background-color: #27ae60;
+}
+.battle-action-btn.move-btn.selected {
+  border: 2px solid #ffd166; /* Highlight selected move */
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.7);
+}
+.battle-action-btn:disabled {
+  background-color: #7f8c8d; /* Gray for disabled */
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 
@@ -231,6 +251,19 @@
   text-align: center;
   padding: 50px;
 }
+
+/* Player Team Lineup (Mini Cards) */
+.player-team-lineup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 15px;
+  padding: 5px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  width: 100%;
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
